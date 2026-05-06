@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>临床路径闯关游戏</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --success: #34a853;
+  --danger: #ea4335;
+  --warning: #fbbc04;
+  --bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --text: #202124;
+  --text-secondary: #5f6368;
+  --border: #dadce0;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  --shadow-hover: 0 4px 8px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.12);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+  flex: 1;
+}
+
+/* Page sections */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Header */
+.header {
+  background: var(--primary);
+  color: white;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 { font-size: 1.4rem; font-weight: 600; }
+.header-score { font-size: 1rem; font-weight: 500; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 16px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: #f1f3f4; }
+.btn-large { padding: 14px 32px; font-size: 1.1rem; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+/* Path list */
+.path-list { display: flex; flex-direction: column; gap: 12px; }
+.path-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.1s;
+  border: 2px solid transparent;
+}
+.path-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+.path-card.selected { border-color: var(--primary); background: #e8f0fe; }
+.path-card .path-info .path-name { font-weight: 600; font-size: 1.05rem; }
+.path-card .path-info .path-desc { color: var(--text-secondary); font-size: 0.85rem; margin-top: 2px; }
+.path-card .path-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge-easy { background: #e6f4ea; color: #1e8e3e; }
+.badge-medium { background: #fef7e0; color: #b06000; }
+.badge-hard { background: #fce8e6; color: #c5221f; }
+
+/* Timer */
+.timer-bar {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.timer-label { font-weight: 600; color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap; }
+.timer-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.timer-fill { height: 100%; background: var(--success); border-radius: 4px; transition: width 0.5s linear, background-color 0.5s; }
+.timer-fill.warning { background: var(--warning); }
+.timer-fill.danger { background: var(--danger); }
+.timer-value { font-weight: 700; font-size: 1.1rem; min-width: 48px; text-align: right; }
+
+/* Scenario display */
+.scenario-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 16px;
+  border-left: 4px solid var(--primary);
+}
+.scenario-type { font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 8px; }
+.scenario-text { font-size: 1rem; line-height: 1.7; color: var(--text); }
+
+/* Choice cards */
+.choices-list { display: flex; flex-direction: column; gap: 10px; }
+.choice-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.1s, border-color 0.2s;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.choice-card:hover:not(.disabled) { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+.choice-card.disabled { opacity: 0.6; cursor: not-allowed; }
+.choice-card.selected { border-color: var(--primary); background: #e8f0fe; }
+.choice-card.correct { border-color: var(--success); background: #e6f4ea; }
+.choice-card.wrong { border-color: var(--danger); background: #fce8e6; }
+.choice-letter {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.choice-text { flex: 1; font-size: 0.95rem; line-height: 1.5; padding-top: 2px; }
+
+/* Feedback */
+.feedback-card {
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.feedback-correct { background: #e6f4ea; border-left: 4px solid var(--success); color: #1e5928; }
+.feedback-wrong { background: #fce8e6; border-left: 4px solid var(--danger); color: #8b1a1a; }
+
+/* Result */
+.result-icon { font-size: 4rem; text-align: center; margin-bottom: 12px; }
+.result-score { text-align: center; font-size: 2.5rem; font-weight: 800; margin-bottom: 4px; }
+.result-label { text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px; }
+.result-detail { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.result-stat { text-align: center; padding: 8px 16px; background: var(--bg); border-radius: var(--radius); }
+.result-stat-value { font-size: 1.3rem; font-weight: 700; }
+.result-stat-label { font-size: 0.75rem; color: var(--text-secondary); }
+
+/* Leaderboard */
+.leaderboard-table { width: 100%; border-collapse: collapse; }
+.leaderboard-table th, .leaderboard-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.leaderboard-table th { font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+.leaderboard-table tr:hover td { background: #f8f9fa; }
+.rank-1 td:first-child { color: #fbbc04; font-weight: 700; }
+.rank-2 td:first-child { color: #9aa0a6; font-weight: 700; }
+.rank-3 td:first-child { color: #e8973b; font-weight: 700; }
+
+/* History list */
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-item {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.history-item:hover { box-shadow: var(--shadow-hover); }
+.history-item-info .history-path { font-weight: 600; font-size: 0.95rem; }
+.history-item-info .history-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.history-item-score { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
+
+/* Player input */
+.player-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.player-input:focus { border-color: var(--primary); }
+
+/* Nav tabs */
+.nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--card-bg); border-radius: var(--radius); padding: 4px; box-shadow: var(--shadow); }
+.nav-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.2s, color 0.2s;
+}
+.nav-tab.active { background: var(--primary); color: white; }
+.nav-tab:hover:not(.active) { background: var(--bg); }
+
+/* Node indicator */
+.node-progress { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.node-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.node-dot.active { background: var(--primary); }
+.node-dot.done { background: var(--success); }
+.node-dot.wrong { background: var(--danger); }
+
+/* Replay section */
+.replay-node {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 10px;
+  border-left: 3px solid var(--border);
+}
+.replay-node.correct { border-left-color: var(--success); }
+.replay-node.wrong { border-left-color: var(--danger); }
+.replay-node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.replay-node-title { font-weight: 600; font-size: 0.9rem; }
+.replay-node-result { font-size: 0.8rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+.replay-node-result.correct { background: #e6f4ea; color: #1e8e3e; }
+.replay-node-result.wrong { background: #fce8e6; color: #c5221f; }
+.replay-node-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px; }
+.replay-node-choice { font-size: 0.9rem; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.page.active { animation: fadeIn 0.3s ease; }
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+.spinner {
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Start screen */
+.start-screen { text-align: center; padding: 40px 20px; }
+.start-screen h2 { font-size: 1.8rem; margin-bottom: 8px; }
+.start-screen p { color: var(--text-secondary); margin-bottom: 32px; font-size: 1rem; }
+.start-form { max-width: 360px; margin: 0 auto; text-align: left; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+.form-hint { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+/* Status message */
+.status-msg {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  display: none;
+}
+.status-msg.error { background: #fce8e6; color: #8b1a1a; display: block; }
+.status-msg.success { background: #e6f4ea; color: #1e5928; display: block; }
+
+@media (max-width: 600px) {
+  #app { padding: 12px; }
+  .header h1 { font-size: 1.1rem; }
+  .scenario-card { padding: 16px; }
+  .choice-card { padding: 12px 14px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Home / Path Selection -->
+  <div id="page-home" class="page active">
+    <div class="header">
+      <h1>🏥 临床路径闯关</h1>
+      <div id="home-score" class="header-score" style="display:none">积分: <span id="home-score-val">0</span></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">👤 玩家信息</div>
+      <div class="form-group">
+        <input type="text" id="player-name" class="player-input" placeholder="输入你的名字（留空默认为 player1）" maxlength="30">
+      </div>
+    </div>
+
+    <div id="status-msg" class="status-msg"></div>
+
+    <div id="path-list-container">
+      <div class="loading"><div class="spinner"></div>加载中...</div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button id="btn-start-game" class="btn btn-primary btn-large btn-block" disabled>选择一条路径开始游戏</button>
+    </div>
+
+    <div class="nav-tabs" style="margin-top:24px">
+      <button class="nav-tab active" data-tab="paths" onclick="showTab('paths')">路径选择</button>
+      <button class="nav-tab" data-tab="history" onclick="showTab('history')">历史记录</button>
+      <button class="nav-tab" data-tab="leaderboard" onclick="showTab('leaderboard')">排行榜</button>
+    </div>
+
+    <!-- Leaderboard tab -->
+    <div id="tab-leaderboard" style="display:none">
+      <div id="leaderboard-container">
+        <div class="loading"><div class="spinner"></div>加载中...</div>
+      </div>
+    </div>
+
+    <!-- History tab -->
+    <div id="tab-history" style="display:none">
+      <div id="history-container">
+        <div class="loading"><div class="spinner"></div>加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Play -->
+  <div id="page-game" class="page">
+    <div class="header">
+      <h1 id="game-title">🏥 临床路径闯关</h1>
+      <div class="header-score">积分: <span id="game-score">0</span></div>
+    </div>
+
+    <div class="timer-bar">
+      <span class="timer-label">剩余时间</span>
+      <div class="timer-track">
+        <div id="timer-fill" class="timer-fill" style="width:100%"></div>
+      </div>
+      <span id="timer-value" class="timer-value">5:00</span>
+    </div>
+
+    <div id="node-progress" class="node-progress"></div>
+
+    <div id="scenario-container">
+      <div class="scenario-card">
+        <div class="scenario-type" id="scenario-type">准入评估</div>
+        <div class="scenario-text" id="scenario-text">加载中...</div>
+      </div>
+    </div>
+
+    <div id="choices-container">
+      <div class="choices-list" id="choices-list"></div>
+    </div>
+
+    <div id="feedback-container"></div>
+
+    <div id="game-action" style="margin-top:16px; display:none">
+      <button id="btn-next" class="btn btn-primary btn-large btn-block">下一题</button>
+      <button id="btn-retry" class="btn btn-outline btn-block" style="margin-top:8px" onclick="returnToHome()">返回主页</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="page-result" class="page">
+    <div class="header">
+      <h1>🏥 临床路径闯关</h1>
+    </div>
+
+    <div class="card">
+      <div class="result-icon" id="result-icon">🎉</div>
+      <div class="result-score" id="result-score">0</div>
+      <div class="result-label" id="result-label">游戏结束</div>
+
+      <div class="result-detail">
+        <div class="result-stat">
+          <div class="result-stat-value" id="result-correct">0</div>
+          <div class="result-stat-label">正确数</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-value" id="result-total">0</div>
+          <div class="result-stat-label">总题数</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-value" id="result-accuracy">0%</div>
+          <div class="result-stat-label">正确率</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="replay-container"></div>
+
+    <div style="margin-top:16px">
+      <button id="btn-play-again" class="btn btn-primary btn-large btn-block">再来一局</button>
+      <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="returnToHome()">返回主页</button>
+    </div>
+  </div>
+
+  <!-- Replay detail -->
+  <div id="page-replay" class="page">
+    <div class="header">
+      <h1>📋 复盘报告</h1>
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:0.85rem" onclick="returnToHome()">返回</button>
+    </div>
+    <div id="replay-full-container"></div>
+  </div>
+</div>
+
+<script>
+// ==================== State ====================
+const API_BASE = window.location.origin;
+let state = {
+  playerId: 'player1',
+  selectedPathId: null,
+  currentGame: null,
+  currentPathway: null,
+  timerInterval: null,
+  wsTimer: null,
+  timeRemaining: 0,
+  totalTime: 0,
+  choiceHistory: [],
+  currentStep: 0,
+  totalSteps: 0,
+  ws: null,
+};
+
+// ==================== WebSocket ====================
+function connectWebSocket(attemptId) {
+  if (state.ws) {
+    state.ws.close();
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
+  const ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'subscribe', attemptId }));
+  };
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'timer') {
+      state.timeRemaining = msg.remainingTime;
+      state.totalTime = msg.totalTime;
+      updateTimerDisplay();
+    } else if (msg.type === 'timeout') {
+      handleTimeout();
+    }
+  };
+
+  ws.onclose = () => {
+    state.ws = null;
+  };
+
+  ws.onerror = () => {
+    state.ws = null;
+  };
+
+  state.ws = ws;
+}
+
+// ==================== Utilities ====================
+function $(id) { return document.getElementById(id); }
+function show(id) { $(id).style.display = 'block'; }
+function hide(id) { $(id).style.display = 'none'; }
+function setHTML(id, html) { $(id).innerHTML = html; }
+function setText(id, text) { $(id).textContent = text; }
+function addClass(el, cls) { el.classList.add(cls); }
+function removeClass(el, cls) { el.classList.remove(cls); }
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  show(pageId);
+}
+
+async function api(path, options = {}) {
+  try {
+    const res = await fetch(API_BASE + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || json.message || 'API Error');
+    return json.data;
+  } catch (e) {
+    showStatus(e.message, 'error');
+    throw e;
+  }
+}
+
+function showStatus(msg, type = 'error') {
+  const el = $('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  setTimeout(() => { el.className = 'status-msg'; el.textContent = ''; }, 5000);
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function getDifficultyLabel(d) {
+  return { easy: '简单', medium: '中等', hard: '困难' }[d] || d;
+}
+
+// ==================== Tab navigation ====================
+function showTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[data-tab]').forEach(t => {
+    if (t.dataset.tab === tab) addClass(t, 'active');
+  });
+  hide('tab-leaderboard'); hide('tab-history');
+  if (tab === 'leaderboard') { show('tab-leaderboard'); loadLeaderboard(); }
+  if (tab === 'history') { show('tab-history'); loadHistory(); }
+}
+
+// ==================== Home Page ====================
+async function loadPaths() {
+  try {
+    const pathways = await api('/paths');
+    const container = $('path-list-container');
+    if (!pathways || pathways.length === 0) {
+      setHTML('path-list-container', '<div class="card"><div style="color:var(--text-secondary)">暂无可用路径，请先运行 npm run seed 填充数据。</div></div>');
+      return;
+    }
+    state.pathways = pathways;
+    setHTML('path-list-container', '<div class="path-list" id="path-list"></div>');
+    const list = $('path-list');
+    pathways.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'path-card';
+      card.dataset.pathId = p.id;
+      card.innerHTML = `
+        <div class="path-info">
+          <div class="path-name">${p.name}</div>
+          <div class="path-desc">${p.description || ''}</div>
+        </div>
+        <div class="path-meta">
+          <span class="badge badge-${p.difficulty}">${getDifficultyLabel(p.difficulty)}</span>
+        </div>`;
+      card.onclick = () => selectPath(p.id);
+      list.appendChild(card);
+    });
+  } catch (e) {
+    setHTML('path-list-container', '<div class="card"><div style="color:var(--danger)">加载路径失败: ' + e.message + '</div></div>');
+  }
+}
+
+function selectPath(pathId) {
+  state.selectedPathId = pathId;
+  document.querySelectorAll('.path-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.pathId === pathId);
+  });
+  const btn = $('btn-start-game');
+  btn.disabled = false;
+  btn.textContent = '开始游戏';
+}
+
+$('btn-start-game').onclick = startGame;
+
+$('player-name').oninput = (e) => {
+  state.playerId = e.target.value.trim() || 'player1';
+};
+
+async function startGame() {
+  if (!state.selectedPathId) { showStatus('请先选择一条临床路径', 'error'); return; }
+  const btn = $('btn-start-game');
+  btn.disabled = true;
+  btn.textContent = '创建对局...';
+  try {
+    const game = await api('/games', {
+      method: 'POST',
+      body: JSON.stringify({ pathId: state.selectedPathId, playerId: state.playerId }),
+    });
+    state.currentGame = game;
+    state.choiceHistory = [];
+    state.currentStep = 0;
+    await loadPathwayDetails(state.selectedPathId);
+    startGameUI(game);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '开始游戏';
+  }
+}
+
+async function loadPathwayDetails(pathId) {
+  try {
+    const pathways = await api('/paths');
+    const p = pathways.find(x => x.id === pathId);
+    state.currentPathway = p;
+    if (p) setText('game-title', '🏥 ' + p.name);
+  } catch {}
+}
+
+// ==================== Game UI ====================
+function startGameUI(game) {
+  showPage('page-game');
+  setText('game-score', game.score || 0);
+
+  // Timer
+  state.timeRemaining = game.remainingTime;
+  state.totalTime = game.remainingTime;
+
+  // Count steps
+  state.totalSteps = countSteps(game);
+
+  // Update timer display
+  updateTimerDisplay();
+
+  // Connect WebSocket for real-time timer
+  connectWebSocket(game.attemptId);
+
+  // Local fallback timer (in case WebSocket not available)
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    // Only update locally if no WebSocket connection
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      state.timeRemaining -= 0.5;
+      if (state.timeRemaining <= 0) {
+        state.timeRemaining = 0;
+        clearInterval(state.timerInterval);
+        handleTimeout();
+      }
+      updateTimerDisplay();
+    }
+  }, 500);
+
+  renderCurrentNode(game);
+}
+
+function countSteps(game) {
+  // Estimate total steps from remaining time (crude)
+  // We'll count as we go
+  return 0;
+}
+
+function updateTimerDisplay() {
+  const pct = state.totalTime > 0 ? (state.timeRemaining / state.totalTime) * 100 : 0;
+  const fill = $('timer-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'timer-fill' + (pct < 20 ? ' danger' : pct < 50 ? ' warning' : '');
+  setText('timer-value', formatTime(Math.ceil(state.timeRemaining)));
+}
+
+function renderCurrentNode(game) {
+  if (!game.currentNode) return;
+
+  // Scenario
+  setText('scenario-type', {
+    admission: '准入评估',
+    decision: '决策点',
+    action: '执行步骤',
+    outcome: '结局',
+  }[game.currentNode.nodeType] || '诊疗节点');
+
+  setText('scenario-text', game.currentNode.description);
+
+  // Update node progress dots
+  renderNodeProgress(game);
+
+  // Choices
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const list = $('choices-list');
+  list.innerHTML = '';
+  $('feedback-container').innerHTML = '';
+  $('game-action').style.display = 'none';
+
+  game.currentNode.choices.forEach((choice, i) => {
+    const card = document.createElement('div');
+    card.className = 'choice-card';
+    card.dataset.choiceId = choice.id;
+    card.innerHTML = `
+      <div class="choice-letter">${letters[i]}</div>
+      <div class="choice-text">${choice.text}</div>`;
+    card.onclick = () => makeChoice(choice.id, card);
+    list.appendChild(card);
+  });
+}
+
+function renderNodeProgress(game) {
+  // Build a simple progress indicator based on score
+  const dots = $('node-progress');
+  // We'll just show dots as we get feedback
+  dots.innerHTML = '';
+  for (let i = 0; i < state.totalSteps; i++) {
+    const d = document.createElement('div');
+    d.className = 'node-dot' + (i < state.currentStep ? ' done' : '');
+    dots.appendChild(d);
+  }
+}
+
+async function makeChoice(choiceId, cardEl) {
+  if (cardEl.classList.contains('disabled')) return;
+
+  // Disable all choices
+  document.querySelectorAll('.choice-card').forEach(c => addClass(c, 'disabled'));
+
+  const timeSpent = state.totalTime - state.timeRemaining;
+
+  try {
+    const result = await api(`/games/${state.currentGame.attemptId}/choice`, {
+      method: 'POST',
+      body: JSON.stringify({ choiceId, timeSpent: Math.round(timeSpent) }),
+    });
+
+    state.currentStep++;
+    state.currentGame.score = result.totalScore;
+    setText('game-score', result.totalScore);
+
+    // Show feedback
+    const feedbackEl = $('feedback-container');
+    const isCorrect = result.correct;
+    feedbackEl.innerHTML = `
+      <div class="feedback-card ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}">
+        <strong>${isCorrect ? '✓ 选择正确!' : '✗ 选择错误'}</strong>
+        ${result.feedback ? '<br>' + result.feedback : ''}
+        ${result.scoreEarned > 0 ? `<br><span style="font-size:0.85rem">+${result.scoreEarned} 分</span>` : ''}
+      </div>`;
+
+    // Mark card
+    const allCards = document.querySelectorAll('.choice-card');
+    allCards.forEach(c => {
+      if (c.dataset.choiceId === choiceId) {
+        addClass(c, isCorrect ? 'correct' : 'wrong');
+      }
+    });
+
+    // Update node progress
+    const dots = $('node-progress');
+    const dot = document.createElement('div');
+    dot.className = 'node-dot ' + (isCorrect ? 'done' : 'wrong');
+    dots.appendChild(dot);
+
+    state.choiceHistory.push({ choiceId, correct: isCorrect, feedback: result.feedback, scoreEarned: result.scoreEarned });
+
+    // Show next / result button
+    $('game-action').style.display = 'block';
+    if (result.completed) {
+      $('btn-next').textContent = '查看结果';
+      $('btn-next').onclick = () => showResult();
+    } else if (result.nextNode) {
+      $('btn-next').textContent = '下一题';
+      $('btn-next').onclick = () => proceedToNextNode(result);
+    }
+
+  } catch (e) {
+    document.querySelectorAll('.choice-card').forEach(c => removeClass(c, 'disabled'));
+  }
+}
+
+function proceedToNextNode(result) {
+  state.currentGame.currentNode = result.nextNode;
+  state.currentGame.remainingTime = result.remainingTime;
+  state.timeRemaining = result.remainingTime;
+  state.totalTime = result.remainingTime || state.totalTime;
+  renderCurrentNode(state.currentGame);
+}
+
+function handleTimeout() {
+  showStatus('时间到！', 'error');
+  if (state.ws) {
+    state.ws.close();
+    state.ws = null;
+  }
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+  showResult();
+}
+
+async function showResult() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  if (!state.currentGame) return;
+
+  try {
+    const replay = await api(`/games/${state.currentGame.attemptId}/replay`);
+
+    // Count correct
+    let correctCount = 0;
+    let totalCount = state.choiceHistory.length;
+    state.choiceHistory.forEach(h => { if (h.correct) correctCount++; });
+    const accuracy = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+
+    // Update result UI
+    const icon = replay.completed ? '🎉' : '⏰';
+    setText('result-icon', icon);
+    setText('result-score', replay.totalScore);
+    setText('result-label', replay.completed ? '闯关完成！' : '游戏结束');
+    setText('result-correct', correctCount);
+    setText('result-total', totalCount);
+    setText('result-accuracy', accuracy + '%');
+
+    // Render mini replay
+    const replayEl = $('replay-container');
+    replayEl.innerHTML = '<div class="card-title" style="margin-bottom:10px">📋 复盘摘要</div>';
+    if (replay.nodeResults && replay.nodeResults.length > 0) {
+      replay.nodeResults.slice(-5).forEach((node, i) => {
+        // We don't have correctness per node from the API, show placeholder
+        const div = document.createElement('div');
+        div.className = 'replay-node';
+        div.innerHTML = `
+          <div class="replay-node-header">
+            <span class="replay-node-title">节点 ${i + 1}</span>
+            <span class="replay-node-result">${node.nodeDescription}</span>
+          </div>
+          <div class="replay-node-choice">选择: ${node.choiceMade}</div>
+          ${node.feedback ? `<div class="replay-node-desc">${node.feedback}</div>` : ''}`;
+        replayEl.appendChild(div);
+      });
+    } else {
+      replayEl.innerHTML += '<div style="color:var(--text-secondary);font-size:0.9rem">暂无详细记录</div>';
+    }
+
+    $('btn-play-again').onclick = () => {
+      state.currentGame = null;
+      state.choiceHistory = [];
+      state.currentStep = 0;
+      // Reset selection
+      state.selectedPathId = null;
+      document.querySelectorAll('.path-card').forEach(c => removeClass(c, 'selected'));
+      $('btn-start-game').disabled = true;
+      $('btn-start-game').textContent = '选择一条路径开始游戏';
+      showPage('page-home');
+      loadPaths();
+    };
+
+    showPage('page-result');
+  } catch (e) {
+    showStatus('加载复盘失败: ' + e.message, 'error');
+    returnToHome();
+  }
+}
+
+// ==================== Leaderboard ====================
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(API_BASE + '/paths');
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const container = $('leaderboard-container');
+    // Build simple leaderboard from local storage
+    const data = getLocalLeaderboard();
+    if (data.length === 0) {
+      setHTML('leaderboard-container', '<div class="card"><div style="color:var(--text-secondary)">暂无排行榜数据</div></div>');
+      return;
+    }
+    let html = '<table class="leaderboard-table"><thead><tr><th>#</th><th>玩家</th><th>总分</th><th>场次</th><th>胜率</th></tr></thead><tbody>';
+    data.slice(0, 20).forEach((p, i) => {
+      const rank = i + 1;
+      html += `<tr class="rank-${rank <= 3 ? rank : ''}">
+        <td>${rank}</td>
+        <td>${p.playerId}</td>
+        <td>${p.totalScore}</td>
+        <td>${p.gameCount}</td>
+        <td>${p.winRate}%</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    setHTML('leaderboard-container', html);
+  } catch (e) {
+    setHTML('leaderboard-container', '<div class="card"><div style="color:var(--danger)">加载失败: ' + e.message + '</div></div>');
+  }
+}
+
+function getLocalLeaderboard() {
+  try {
+    return JSON.parse(localStorage.getItem('cpd_leaderboard') || '[]');
+  } catch { return []; }
+}
+
+function saveToLeaderboard(attempt) {
+  try {
+    const data = getLocalLeaderboard();
+    const existing = data.find(x => x.playerId === attempt.playerId);
+    if (existing) {
+      existing.totalScore += attempt.score || 0;
+      existing.gameCount++;
+      if (attempt.completed) existing.winCount++;
+      existing.winRate = Math.round((existing.winCount / existing.gameCount) * 100);
+    } else {
+      data.push({
+        playerId: attempt.playerId,
+        totalScore: attempt.score || 0,
+        gameCount: 1,
+        winCount: attempt.completed ? 1 : 0,
+        winRate: attempt.completed ? 100 : 0,
+      });
+    }
+    data.sort((a, b) => b.totalScore - a.totalScore);
+    localStorage.setItem('cpd_leaderboard', JSON.stringify(data.slice(0, 50)));
+  } catch {}
+}
+
+// ==================== History ====================
+async function loadHistory() {
+  const container = $('history-container');
+  const data = getLocalHistory();
+  if (data.length === 0) {
+    setHTML('history-container', '<div class="card"><div style="color:var(--text-secondary)">暂无历史记录</div></div>');
+    return;
+  }
+  let html = '<div class="history-list">';
+  data.slice(0, 20).forEach(h => {
+    html += `<div class="history-item" onclick="showReplayFromHistory('${h.attemptId}')">
+      <div class="history-item-info">
+        <div class="history-path">${h.pathName || h.pathId}</div>
+        <div class="history-meta">${new Date(h.time).toLocaleString('zh-CN')} · ${h.completed ? '完成' : '未完成'}</div>
+      </div>
+      <div class="history-item-score">${h.score}分</div>
+    </div>`;
+  });
+  html += '</div>';
+  setHTML('history-container', html);
+}
+
+function getLocalHistory() {
+  try { return JSON.parse(localStorage.getItem('cpd_history') || '[]'); } catch { return []; }
+}
+
+function saveToHistory(attempt) {
+  try {
+    const data = getLocalHistory();
+    data.unshift({
+      attemptId: attempt.attemptId,
+      pathId: attempt.pathId,
+      pathName: state.currentPathway?.name || attempt.pathId,
+      playerId: attempt.playerId,
+      score: attempt.score || 0,
+      completed: attempt.completed,
+      time: Date.now(),
+    });
+    localStorage.setItem('cpd_history', JSON.stringify(data.slice(0, 100)));
+    saveToLeaderboard(attempt);
+  } catch {}
+}
+
+async function showReplayFromHistory(attemptId) {
+  try {
+    const replay = await api(`/games/${attemptId}/replay`);
+    showReplayFull(replay);
+  } catch (e) {
+    showStatus('加载复盘失败: ' + e.message, 'error');
+  }
+}
+
+function showReplayFull(replay) {
+  const container = $('replay-full-container');
+  let html = `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:0.9rem;color:var(--text-secondary)">${replay.pathName} · ${replay.playerId}</div>
+    <div style="font-size:1.2rem;font-weight:700;margin:8px 0">总分: ${replay.totalScore}</div>
+    <div style="font-size:0.85rem">${new Date(replay.startTime).toLocaleString('zh-CN')} → ${new Date(replay.endTime).toLocaleString('zh-CN')}</div>
+  </div>`;
+
+  if (replay.nodeResults && replay.nodeResults.length > 0) {
+    replay.nodeResults.forEach((node, i) => {
+      html += `<div class="replay-node">
+        <div class="replay-node-header">
+          <span class="replay-node-title">节点 ${i + 1}: ${node.nodeDescription}</span>
+          <span class="replay-node-result ${node.isCorrect ? 'correct' : 'wrong'}">${node.isCorrect ? '✓ 正确' : '✗ 错误'}</span>
+        </div>
+        <div class="replay-node-choice">选择: ${node.choiceMade}</div>
+        ${node.feedback ? `<div class="replay-node-desc">${node.feedback}</div>` : ''}
+        ${node.timeSpent ? `<div class="replay-node-desc">耗时: ${node.timeSpent}秒</div>` : ''}
+      </div>`;
+    });
+  }
+
+  container.innerHTML = html;
+  showPage('page-replay');
+}
+
+// ==================== Navigation ====================
+function returnToHome() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.currentGame) {
+    saveToHistory(state.currentGame);
+  }
+  state.currentGame = null;
+  state.choiceHistory = [];
+  state.currentStep = 0;
+  showPage('page-home');
+  loadPaths();
+}
+
+// ==================== Init ====================
+function init() {
+  loadPaths();
+  // Check for stored player name
+  const stored = localStorage.getItem('cpd_player');
+  if (stored) $('player-name').value = stored;
+  $('player-name').onblur = () => {
+    state.playerId = $('player-name').value.trim() || 'player1';
+    localStorage.setItem('cpd_player', state.playerId);
+  };
+
+  // Pre-connect to API
+  fetch(API_BASE + '/health').catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

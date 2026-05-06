@@ -1,0 +1,26 @@
+
+Task 15 completed: 添加环境变量与配置文件
+- 创建 .env.example（DB_PATH, PORT, USE_LLM, LLM_API_KEY, DEFAULT_PLAYER）✓
+- 创建 src/core/config.ts：从 .env 读取配置 ✓
+- getConfig() 返回完整配置对象 ✓
+- TypeScript 编译无错误 ✓
+
+Task 15 completed: 添加环境变量与配置文件
+- 创建 .env.example（DB_PATH, PORT, USE_LLM, LLM_API_KEY, DEFAULT_PLAYER）✓
+- 创建 src/core/config.ts：从 .env 读取配置 ✓
+- getConfig() 返回完整配置对象 ✓
+- TypeScript 编译无错误 ✓
+
+Task 22 completed: 编译 TypeScript 并验证构建
+- 运行 npm run build ✓
+- TypeScript 编译无错误 ✓
+- dist/ 目录生成完整（bin/, core/, db/, src/）✓
+- 构建日志已保存到 build.log
+
+Task 23 completed: 发布前清理
+- 删除 data/clinic_paths.db ✓
+- 删除 dist/ 构建产物 ✓
+- 确认 data/pathways/*.json 保留 ✓
+- 确认 buymeacoffee.png 保留 ✓
+- 确认 .gitignore, .env.example, package.json, tsconfig.json 保留 ✓
+- 确认无 logs/, tmp/, temp/, __pycache__/ 等缓存目录 ✓

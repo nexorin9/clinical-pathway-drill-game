@@ -1,0 +1,40 @@
+{
+  "name": "clinical-pathway-drill-game",
+  "version": "1.0.0",
+  "description": "将临床路径偏离场景设计为可重复桌面推演游戏，医生抽牌决定患者病情演变，在限定步骤内做出符合指南的决策，事后系统化复盘。",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/bin/cli.js",
+    "build": "tsc",
+    "dev": "ts-node src/bin/cli.ts",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "seed": "ts-node src/db/seed.ts",
+    "cli": "node dist/bin/cli.js",
+    "api": "node dist/src/api/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/chalk": "^0.4.31",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.6.0",
+    "@types/sqlite3": "^3.1.11",
+    "@types/ws": "^8.18.1",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "sqlite3": "^6.0.1",
+    "ws": "^8.20.0"
+  }
+}
